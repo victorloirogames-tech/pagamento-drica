@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Pay - Drica Confeitaria</title>
+    <title>GPay Drica</title>
     <script src="https://pay.google.com/gp/p/js/pay.js"></script>
     <style>
-        /* CSS para deixar o visual estilo iFood */
+        /* CSS para matar o fundo branco e centralizar */
         body, html {
             margin: 0;
             padding: 0;
@@ -15,21 +15,20 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: transparent; /* Remove o fundo branco */
+            background: transparent !important; /* Deixa transparente */
             overflow: hidden;
         }
 
         #container {
             width: 100%;
-            max-width: 300px; /* Largura padrão do botão */
+            max-width: 280px; /* Tamanho ideal para o botão não cortar */
             display: flex;
             justify-content: center;
         }
 
-        /* Faz o botão do Google Pay ocupar bem o espaço */
-        button.gpay-button {
+        /* Garante que o botão preencha o espaço sem bugar */
+        .gpay-card-info-container {
             width: 100% !important;
-            min-width: 250px !important;
         }
     </style>
 </head>
@@ -40,7 +39,7 @@
     <script>
         const baseRequest = { apiVersion: 2, apiVersionMinor: 0 };
         const paymentsClient = new google.payments.api.PaymentsClient({ 
-            environment: 'PRODUCTION' // Mude para 'TEST' se quiser apenas testar o fluxo
+            environment: 'PRODUCTION' // Mude para TEST se quiser apenas simular
         });
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -49,7 +48,7 @@
         const button = paymentsClient.createButton({
             buttonColor: 'black',
             buttonType: 'pay',
-            buttonSizeMode: 'fill', // Faz o botão preencher o container
+            buttonSizeMode: 'fill',
             onClick: () => {
                 const paymentDataRequest = Object.assign({}, baseRequest);
                 paymentDataRequest.allowedPaymentMethods = [{
@@ -62,7 +61,7 @@
                         type: 'PAYMENT_GATEWAY',
                         parameters: {
                             'gateway': 'mercadopago',
-                            'gatewayMerchantId': 'SUA_PUBLIC_KEY_AQUI' // <--- TROQUE PELA SUA CHAVE DO MERCADO PAGO
+                            'gatewayMerchantId': 'SUA_PUBLIC_KEY_AQUI' // <--- NÃO ESQUEÇA DE TROCAR!
                         }
                     }
                 }];
@@ -76,11 +75,11 @@
 
                 paymentsClient.loadPaymentData(paymentDataRequest)
                     .then(function(paymentData) {
-                        // Avisa o app do Base44 que deu certo
+                        // Manda o sinal de sucesso pro Blaze44
                         window.parent.postMessage("PAGAMENTO_OK", "*");
                     })
                     .catch(function(err) {
-                        console.error("Erro no pagamento:", err);
+                        console.error(err);
                     });
             }
         });
