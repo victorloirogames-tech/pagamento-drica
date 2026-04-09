@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Pay - Drica Confeitaria</title>
+    <!-- Script oficial do Google -->
+    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
+</head>
+<body style="background: #FDF8F0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif;">
+    
+    <div id="container"></div>
+
+    <script>
+        // Configuração do Google Pay
+        const baseRequest = { apiVersion: 2, apiVersionMinor: 0 };
+        const paymentsClient = new google.payments.api.PaymentsClient({ environment: 'PRODUCTION' });
+
+        // Pega o valor total que o Blaze44 vai enviar pela URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const valorTotal = urlParams.get('total') || '10.00';
+
+        // Renderiza o botão oficial do Google
+        const button = paymentsClient.createButton({
+            buttonColor: 'black',
+            buttonType: 'pay',
+            onClick: () => {
+                const paymentDataRequest = Object.assign({}, baseRequest);
+                paymentDataRequest.allowedPaymentMethods = [{
+                    type: 'CARD',
+                    parameters: {
+                        allowedAuthMethods: ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+                        allowedCardNetworks: ["MASTERCARD", "VISA"]
+                    },
+                    tokenizationSpecification: {
+                        type: 'PAYMENT_GATEWAY',
+                        parameters: {
+                            'gateway': 'mercadopago',
+                            'gatewayMerchantId': 'SUA_PUBLIC_KEY_AQUI' // <--- COLOQUE SUA PUBLIC KEY DO MERCADO PAGO AQUI
+                        }
+                    }
+                }];
+                paymentDataRequest.merchantInfo = { merchantName: 'Drica Confeitaria' };
+                paymentDataRequest.transactionInfo = {
+                    totalPriceStatus: 'FINAL',
+                    totalPrice: valorTotal,
+                    currencyCode: 'BRL',
+                    countryCode: 'BR'
+                };
+
+                paymentsClient.loadPaymentData(paymentDataRequest)
+                    .then(function(paymentData) {
+                        // Quando pagar, avisa o app do Base44 que deu certo
+                        window.parent.postMessage("PAGAMENTO_OK", "*");
+                    })
+                    .catch(function(err) {
+                        console.error("Erro no pagamento:", err);
+                    });
+            }
+        });
+
+        document.getElementById('container').appendChild(button);
+    </script>
+</body>
+</html>
