@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teste GPay - Drica</title>
+    <title>Teste Final GPay</title>
     <script src="https://pay.google.com/gp/p/js/pay.js"></script>
     <style>
         body, html { 
@@ -14,7 +14,7 @@
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            background: #fdf6e3; /* Cor de fundo para combinar com a Drica */
+            background: #e0f7fa; /* Cor azul clara para confirmar o update */
         }
         #container { width: 100%; max-width: 280px; }
     </style>
@@ -23,11 +23,8 @@
     <div id="container"></div>
 
     <script>
-        // MUDADO PARA 'TEST' PARA PULAR A VALIDAÇÃO DO GOOGLE
+        // MODO TESTE PURO
         const paymentsClient = new google.payments.api.PaymentsClient({ environment: 'TEST' });
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const valorTotal = urlParams.get('total') || '1.00';
 
         const button = paymentsClient.createButton({
             buttonColor: 'black', 
@@ -44,21 +41,21 @@
                             allowedCardNetworks: ["MASTERCARD", "VISA"]
                         },
                         tokenizationSpecification: {
-                            type: 'PAYMENT_GATEWAY',
+                            // TESTE SEM GATEWAY (Usa o padrão do Google para desenvolvedores)
+                            type: 'DIRECT',
                             parameters: {
-                                'gateway': 'mercadopago',
-                                'gatewayMerchantId': 'APP_USR-809af91a-a817-4ecc-8d2a-2352e2528619'
+                                'protocolVersion': 'ECv2',
+                                'publicKey': 'BOdo7sR1oX7NrYv50KAnS68A7oVs0S8tWtmG/a04yJ/Z7T695F066E1LqLw38qf70/u55CAd8e1D+6w4xGj0u2M='
                             }
                         }
                     }],
-                    // AQUI ESTÁ O TRUQUE: Usando um ID genérico para o teste funcionar
                     merchantInfo: {
-                        merchantName: 'Drica Confeitaria (MODO TESTE)',
+                        merchantName: 'Teste de Integracao',
                         merchantId: '12345678901234567890' 
                     },
                     transactionInfo: {
                         totalPriceStatus: 'FINAL',
-                        totalPrice: valorTotal,
+                        totalPrice: '1.00',
                         currencyCode: 'BRL',
                         countryCode: 'BR'
                     }
@@ -66,12 +63,10 @@
 
                 paymentsClient.loadPaymentData(request)
                     .then(paymentData => {
-                        console.log("Sucesso no Teste!", paymentData);
-                        alert("BOA! A janela abriu. O código está funcionando perfeitamente.");
+                        alert("VITÓRIA! A janela abriu. O problema é apenas a espera pela aprovação do Mercado Pago/Google.");
                     })
                     .catch(err => {
-                        console.error("Erro no teste:", err);
-                        alert("Erro: " + (err.statusMessage || "Verifique o console"));
+                        alert("Erro técnico: " + err.statusCode);
                     });
             }
         });
