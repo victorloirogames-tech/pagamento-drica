@@ -2,258 +2,148 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Checkout - Drica Confeitaria</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagamento GPay - Drica Confeitaria</title>
 
 <script src="https://pay.google.com/gp/p/js/pay.js"></script>
 
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
+body, html {
+margin: 0;
+padding: 0;
+width: 100%;
+height: 100%;
+display: flex;
+justify-content: center;
+align-items: center;
+background: transparent !important;
+overflow: hidden;
 }
 
-body{
-font-family:Arial, Helvetica, sans-serif;
-background:#ffffff;
-color:#111;
-display:flex;
-justify-content:center;
-align-items:center;
-min-height:100vh;
-padding:20px;
-}
-
-.card{
-width:100%;
-max-width:420px;
-background:#fff;
-border:1px solid #e5e5e5;
-border-radius:18px;
-padding:24px;
-box-shadow:0 10px 30px rgba(0,0,0,.08);
-}
-
-.logo{
-font-size:26px;
-font-weight:700;
-margin-bottom:10px;
-text-align:center;
-}
-
-.sub{
-font-size:14px;
-color:#666;
-text-align:center;
-margin-bottom:24px;
-}
-
-.item{
-display:flex;
-justify-content:space-between;
-padding:12px 0;
-border-bottom:1px solid #eee;
-font-size:15px;
-}
-
-.total{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:18px 0;
-font-size:22px;
-font-weight:700;
-}
-
-#buttonArea{
-margin-top:10px;
-}
-
-.safe{
-margin-top:18px;
-font-size:12px;
-color:#777;
-text-align:center;
-line-height:1.5;
+#container {
+width: 100%;
+max-width: 280px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-
-<div class="logo">
-Drica Confeitaria
-</div>
-
-<div class="sub">
-Finalize seu pedido com segurança
-</div>
-
-<div class="item">
-<span>Pedido</span>
-<span>Bolo Personalizado</span>
-</div>
-
-<div class="item">
-<span>Entrega</span>
-<span>Grátis</span>
-</div>
-
-<div class="total">
-<span>Total</span>
-<span id="valorTotal">R$ 0,00</span>
-</div>
-
-<div id="buttonArea"></div>
-
-<div class="safe">
-Pagamento protegido via Google Pay
-</div>
-
-</div>
+<div id="container"></div>
 
 <script>
-// ===============================
-// VALOR
-// ===============================
-const params =
-new URLSearchParams(window.location.search);
-
-const total =
-params.get("total") || "25.00";
-
-document.getElementById("valorTotal")
-.innerText =
-"R$ " + Number(total).toFixed(2).replace(".", ",");
-
-// ===============================
-// GOOGLE PAY
-// ===============================
 const paymentsClient =
 new google.payments.api.PaymentsClient({
-environment:"PRODUCTION"
+environment: "PRODUCTION"
 });
 
-// botão oficial
+const urlParams =
+new URLSearchParams(window.location.search);
+
+const valorTotal =
+urlParams.get("total") || "10.00";
+
 const button =
 paymentsClient.createButton({
-buttonColor:"black",
-buttonType:"pay",
-buttonSizeMode:"fill",
+buttonColor: "black",
+buttonType: "pay",
+buttonSizeMode: "fill",
 
-onClick: async ()=>{
-
-try{
+onClick: () => {
 
 const request = {
+apiVersion: 2,
+apiVersionMinor: 0,
 
-apiVersion:2,
-apiVersionMinor:0,
+allowedPaymentMethods: [{
+type: "CARD",
 
-allowedPaymentMethods:[
-{
-type:"CARD",
-
-parameters:{
-allowedAuthMethods:[
+parameters: {
+allowedAuthMethods: [
 "PAN_ONLY",
 "CRYPTOGRAM_3DS"
 ],
 
-allowedCardNetworks:[
-"VISA",
-"MASTERCARD"
+allowedCardNetworks: [
+"MASTERCARD",
+"VISA"
 ]
 },
 
-tokenizationSpecification:{
-type:"PAYMENT_GATEWAY",
+tokenizationSpecification: {
+type: "PAYMENT_GATEWAY",
 
-parameters:{
-gateway:"mercadopago",
-gatewayMerchantId:"APP_USR-809af91a-a817-4ecc-8d2a-2352e2528619"
+parameters: {
+gateway: "mercadopago",
+gatewayMerchantId: "APP_USR-809af91a-a817-4ecc-8d2a-2352e2528619"
 }
 }
-}
-],
+}],
 
-merchantInfo:{
-merchantName:"Drica Confeitaria",
-merchantId:"BCR2DN4T3XN3H3ZC"
+merchantInfo: {
+merchantName: "Drica Confeitaria",
+merchantId: "BCR2DN4T3XN3H3ZC"
 },
 
-transactionInfo:{
-totalPriceStatus:"FINAL",
-totalPrice:total,
-currencyCode:"BRL",
-countryCode:"BR"
+transactionInfo: {
+totalPriceStatus: "FINAL",
+totalPrice: valorTotal,
+currencyCode: "BRL",
+countryCode: "BR"
 }
 };
 
-const paymentData =
-await paymentsClient.loadPaymentData(request);
+paymentsClient.loadPaymentData(request)
+.then(paymentData => {
 
-// token
 const token =
 JSON.parse(
 paymentData.paymentMethodData
 .tokenizationData.token
 ).id;
 
-// backend
-const response =
-await fetch(
+fetch(
 "https://drica-backendd.vercel.app/api/criar-pagamento",
 {
-method:"POST",
-headers:{
-"Content-Type":"application/json"
+method: "POST",
+headers: {
+"Content-Type": "application/json"
 },
-body:JSON.stringify({
-method:"gpay",
-token:token,
-amount:total
+body: JSON.stringify({
+token: token,
+amount: valorTotal,
+method: "gpay"
 })
 }
-);
+)
+.then(response => response.json())
+.then(data => {
 
-const data =
-await response.json();
-
-if(
-data.status === "approved" ||
-data.status === "in_process"
-){
+if(data.status === "approved"){
 
 window.parent.postMessage(
-{
-type:"PAGAMENTO_OK",
-paymentId:data.id
-},
+"PAGAMENTO_OK",
 "*"
 );
 
 }else{
 
-alert("Pagamento não aprovado.");
+alert("O pagamento não foi aprovado.");
 
 }
 
-}catch(error){
+});
 
-console.error(error);
-alert("Erro ao processar pagamento.");
-
-}
+})
+.catch(err => {
+console.log(err);
+});
 
 }
 });
 
 document
-.getElementById("buttonArea")
+.getElementById("container")
 .appendChild(button);
 </script>
 
