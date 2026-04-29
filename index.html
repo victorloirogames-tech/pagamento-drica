@@ -1,11 +1,9 @@
-<!-- pagamento-drica/index.html -->
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Google Pay - Drica</title>
+<title>Google Pay Teste - Drica Confeitaria</title>
 
 <script src="https://pay.google.com/gp/p/js/pay.js"></script>
 
@@ -16,11 +14,11 @@ padding:0;
 width:100%;
 height:100%;
 display:flex;
-align-items:center;
 justify-content:center;
+align-items:center;
 background:transparent;
 overflow:hidden;
-font-family:Arial,Helvetica,sans-serif;
+font-family:Arial, Helvetica, sans-serif;
 }
 
 #container{
@@ -35,15 +33,24 @@ max-width:280px;
 <div id="container"></div>
 
 <script>
+// ======================================
+// GOOGLE PAY EM MODO TESTE
+// ======================================
+
 const paymentsClient =
 new google.payments.api.PaymentsClient({
-environment:"PRODUCTION"
+environment:"TEST"
 });
 
-const urlParams = new URLSearchParams(window.location.search);
+// pega valor da URL ?total=10.00
+const params = new URLSearchParams(window.location.search);
 
 const total =
-urlParams.get("total") || "10.00";
+params.get("total") || "10.00";
+
+// ======================================
+// BOTÃO GOOGLE PAY
+// ======================================
 
 const button =
 paymentsClient.createButton({
@@ -55,7 +62,8 @@ onClick: async () => {
 
 try {
 
-const request = {
+const paymentRequest = {
+
 apiVersion:2,
 apiVersionMinor:0,
 
@@ -70,8 +78,8 @@ allowedAuthMethods:[
 ],
 
 allowedCardNetworks:[
-"MASTERCARD",
-"VISA"
+"VISA",
+"MASTERCARD"
 ]
 },
 
@@ -87,8 +95,7 @@ gatewayMerchantId:"APP_USR-809af91a-a817-4ecc-8d2a-2352e2528619"
 ],
 
 merchantInfo:{
-merchantName:"Drica Confeitaria",
-merchantId:"BCR2DN4T3XN3H3ZC"
+merchantName:"Drica Confeitaria"
 },
 
 transactionInfo:{
@@ -99,18 +106,20 @@ countryCode:"BR"
 }
 };
 
+// abre Google Pay
 const paymentData =
-await paymentsClient.loadPaymentData(request);
+await paymentsClient.loadPaymentData(paymentRequest);
 
+// token gerado
 const tokenObj =
 JSON.parse(
 paymentData.paymentMethodData
 .tokenizationData.token
 );
 
-const token =
-tokenObj.id;
+const token = tokenObj.id;
 
+// envia para backend
 const response =
 await fetch(
 "https://drica-backendd.vercel.app/api/criar-pagamento",
@@ -127,10 +136,12 @@ amount:total
 }
 );
 
-const data =
-await response.json();
+const data = await response.json();
 
-if (
+console.log(data);
+
+// retorno
+if(
 data.status === "approved" ||
 data.status === "in_process"
 ){
@@ -145,9 +156,7 @@ paymentId:data.id
 
 }else{
 
-alert(
-"Pagamento não aprovado."
-);
+alert("Pagamento não aprovado.");
 
 }
 
@@ -155,15 +164,14 @@ alert(
 
 console.error(error);
 
-alert(
-"Erro ao processar pagamento."
-);
+alert("Erro no Google Pay Teste.");
 
 }
 
 }
 });
 
+// renderiza botão
 document
 .getElementById("container")
 .appendChild(button);
