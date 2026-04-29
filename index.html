@@ -3,67 +3,153 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Pagamento GPay - Drica Confeitaria</title>
+<title>Checkout - Drica Confeitaria</title>
 
 <script src="https://pay.google.com/gp/p/js/pay.js"></script>
 
 <style>
-html,body{
+*{
 margin:0;
 padding:0;
-width:100%;
-height:100%;
+box-sizing:border-box;
+}
+
+body{
+font-family:Arial, Helvetica, sans-serif;
+background:#ffffff;
+color:#111;
 display:flex;
 justify-content:center;
 align-items:center;
-background:transparent !important;
-overflow:hidden;
-font-family:Arial, Helvetica, sans-serif;
+min-height:100vh;
+padding:20px;
 }
 
-#container{
+.card{
 width:100%;
-max-width:280px;
+max-width:420px;
+background:#fff;
+border:1px solid #e5e5e5;
+border-radius:18px;
+padding:24px;
+box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.logo{
+font-size:26px;
+font-weight:700;
+margin-bottom:10px;
+text-align:center;
+}
+
+.sub{
+font-size:14px;
+color:#666;
+text-align:center;
+margin-bottom:24px;
+}
+
+.item{
+display:flex;
+justify-content:space-between;
+padding:12px 0;
+border-bottom:1px solid #eee;
+font-size:15px;
+}
+
+.total{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:18px 0;
+font-size:22px;
+font-weight:700;
+}
+
+#buttonArea{
+margin-top:10px;
+}
+
+.safe{
+margin-top:18px;
+font-size:12px;
+color:#777;
+text-align:center;
+line-height:1.5;
 }
 </style>
 </head>
 
 <body>
 
-<div id="container"></div>
+<div class="card">
+
+<div class="logo">
+Drica Confeitaria
+</div>
+
+<div class="sub">
+Finalize seu pedido com segurança
+</div>
+
+<div class="item">
+<span>Pedido</span>
+<span>Bolo Personalizado</span>
+</div>
+
+<div class="item">
+<span>Entrega</span>
+<span>Grátis</span>
+</div>
+
+<div class="total">
+<span>Total</span>
+<span id="valorTotal">R$ 0,00</span>
+</div>
+
+<div id="buttonArea"></div>
+
+<div class="safe">
+Pagamento protegido via Google Pay
+</div>
+
+</div>
 
 <script>
-// ======================================
-// GOOGLE PAY PRODUÇÃO (ORIGINAL)
-// ======================================
+// ===============================
+// VALOR
+// ===============================
+const params =
+new URLSearchParams(window.location.search);
 
+const total =
+params.get("total") || "25.00";
+
+document.getElementById("valorTotal")
+.innerText =
+"R$ " + Number(total).toFixed(2).replace(".", ",");
+
+// ===============================
+// GOOGLE PAY
+// ===============================
 const paymentsClient =
 new google.payments.api.PaymentsClient({
 environment:"PRODUCTION"
 });
 
-// valor via URL ?total=10.00
-const urlParams =
-new URLSearchParams(window.location.search);
-
-const valorTotal =
-urlParams.get("total") || "10.00";
-
-// ======================================
-// BOTÃO GOOGLE PAY
-// ======================================
-
+// botão oficial
 const button =
 paymentsClient.createButton({
 buttonColor:"black",
 buttonType:"pay",
 buttonSizeMode:"fill",
 
-onClick: async () => {
+onClick: async ()=>{
 
-try {
+try{
 
 const request = {
+
 apiVersion:2,
 apiVersionMinor:0,
 
@@ -78,8 +164,8 @@ allowedAuthMethods:[
 ],
 
 allowedCardNetworks:[
-"MASTERCARD",
-"VISA"
+"VISA",
+"MASTERCARD"
 ]
 },
 
@@ -101,24 +187,23 @@ merchantId:"BCR2DN4T3XN3H3ZC"
 
 transactionInfo:{
 totalPriceStatus:"FINAL",
-totalPrice:valorTotal,
+totalPrice:total,
 currencyCode:"BRL",
 countryCode:"BR"
 }
 };
 
-// abre Google Pay
 const paymentData =
 await paymentsClient.loadPaymentData(request);
 
-// token gerado
+// token
 const token =
 JSON.parse(
 paymentData.paymentMethodData
 .tokenizationData.token
 ).id;
 
-// envia backend
+// backend
 const response =
 await fetch(
 "https://drica-backendd.vercel.app/api/criar-pagamento",
@@ -128,9 +213,9 @@ headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
+method:"gpay",
 token:token,
-amount:valorTotal,
-method:"gpay"
+amount:total
 })
 }
 );
@@ -138,26 +223,29 @@ method:"gpay"
 const data =
 await response.json();
 
-if(data.status === "approved"){
+if(
+data.status === "approved" ||
+data.status === "in_process"
+){
 
 window.parent.postMessage(
-"PAGAMENTO_OK",
+{
+type:"PAGAMENTO_OK",
+paymentId:data.id
+},
 "*"
 );
 
 }else{
 
-alert(
-"O pagamento não foi aprovado pela operadora."
-);
+alert("Pagamento não aprovado.");
 
 }
 
 }catch(error){
 
-console.log(
-"Aguardando aprovação final do Google..."
-);
+console.error(error);
+alert("Erro ao processar pagamento.");
 
 }
 
@@ -165,7 +253,7 @@ console.log(
 });
 
 document
-.getElementById("container")
+.getElementById("buttonArea")
 .appendChild(button);
 </script>
 
